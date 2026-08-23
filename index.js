@@ -75,6 +75,8 @@ export const OpenCodeVoice = {
       }
     }
 
+    log("init", "opencode-voice tui plugin loaded", "info");
+
     const complete = createLlmClient(options || {}, { log });
 
     function toast(message, variant = "info") {
