@@ -138,13 +138,12 @@ export const OpenCodeVoice = {
     }
 
     // ---- Voice reply mode: auto-TTS on session idle when enabled. ----
-    let lastSpokenMessageID = null;
     const offReplyIdle = api.event.on("session.idle", async () => {
       if (!voiceChat.replyModeEnabled()) return;
       const result = await getTurnAssistantText(api.client, api);
       if (!result || !result.text) return;
-      if (result.lastMessageID === lastSpokenMessageID) return;
-      lastSpokenMessageID = result.lastMessageID;
+      if (result.lastMessageID === voiceChat.lastSpokenID()) return;
+      voiceChat.markSpoken(result.lastMessageID);
       await speakText(result.text, TTS_AUTO_SYSTEM_PROMPT);
     });
 
