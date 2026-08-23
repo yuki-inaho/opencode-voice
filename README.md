@@ -12,6 +12,14 @@ Directory-independent: the ledger path is resolved from the user home, not the
 working directory (fixes the startup-directory dependency of the earlier
 Python/pixi version).
 
+## Branches
+
+| Branch | Contents |
+|---|---|
+| `main` | **JS TUI plugin (this)** — OpenCode TUI integration with sidebar panel |
+| `python-cli` | Python CLI version (standalone `opencode-voice` command, cost reporting) |
+| `upstream-main` | Original JS fork from `renjfk/opencode-voice` (Piper-based) |
+
 ## Install
 
 Add the plugin to `~/.config/opencode/tui.json`:
