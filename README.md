@@ -51,6 +51,24 @@ Restart OpenCode. The plugin loads at startup.
   - `XAI_API_KEY` — TTS
   - `OPENROUTER_API_KEY` — LLM normalization
 
+## Voice chat mode (push-to-talk)
+
+Three keybindings drive a hands-free conversation loop:
+
+| Key | Command | Action |
+|---|---|---|
+| `Ctrl+Alt+C` | `voice.reply-mode.toggle` | Toggle **voice reply mode** (auto-TTS every assistant turn) |
+| `Ctrl+Alt+/` | `voice.chat.start` | Start recording (push-to-talk) |
+| `Ctrl+Alt+\` | `voice.chat.send` | Stop recording, transcribe (Groq), submit prompt, speak the reply (xAI TTS) |
+
+Workflow: press `Ctrl+Alt+/` and speak → press `Ctrl+Alt+\` → the plugin
+transcribes with Groq Whisper, normalizes with the LLM, submits it to the
+active session, waits for the assistant reply, synthesizes it with xAI TTS,
+and plays it back through `mpv`.
+
+With **voice reply mode** ON (`Ctrl+Alt+C`), every assistant turn is
+automatically spoken without pressing `Ctrl+Alt+\`.
+
 ## Commands
 
 | Command | Keybind | Description |
@@ -59,8 +77,11 @@ Restart OpenCode. The plugin loads at startup.
 | `/voice-submit` | `leader+r` | Stop recording, transcribe, and submit prompt |
 | `/voice-stop` | — | Cancel recording |
 | `/voice-speak` | `leader+s` | Read last assistant response aloud (xAI TTS) |
-| `/voice-mode` | `leader+v` | Toggle auto TTS on/off |
+| `/voice-mode` | `leader+v` | Toggle voice reply mode (auto-TTS every turn) |
 | `/voice-stop-tts` | `escape` | Stop playback |
+| — | `ctrl+alt+c` | Toggle voice reply mode (push-to-talk loop) |
+| — | `ctrl+alt+/` | Start voice-chat recording |
+| — | `ctrl+alt+\` | Stop recording, transcribe, submit, speak reply |
 
 > **Note on keybinds.** `ctrl+r` (session rename) and `escape` are OpenCode
 > defaults that this plugin reassigns. If another plugin or your config uses

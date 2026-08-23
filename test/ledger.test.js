@@ -27,7 +27,7 @@ test("ledgerPath uses env override", () => {
 });
 
 test("appendLedger then readLedger round-trips", () => {
-  withLedgerDir((file) => {
+  withLedgerDir((_file) => {
     appendLedger({ kind: "stt", model: "whisper-large-v3-turbo", audio_seconds: 15, cost_usd: 0.0002 });
     appendLedger({ kind: "tts", voice: "eve", chars: 50, cost_usd: 0.00075 });
     const entries = readLedger();
@@ -38,7 +38,7 @@ test("appendLedger then readLedger round-trips", () => {
 });
 
 test("summarizeLedger aggregates by kind", () => {
-  withLedgerDir((file) => {
+  withLedgerDir((_file) => {
     appendLedger({ kind: "stt", audio_seconds: 15, cost_usd: 0.0002 });
     appendLedger({ kind: "stt", audio_seconds: 5, cost_usd: 0.0001 });
     appendLedger({ kind: "llm", cost_usd: 0.001 });

@@ -6,7 +6,7 @@ export default [
       sourceType: "module",
     },
     rules: {
-      "no-unused-vars": "error",
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-undef": "off",
       "no-constant-condition": "warn",
     },

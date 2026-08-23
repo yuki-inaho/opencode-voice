@@ -29,6 +29,7 @@ import { synthesizeXai, playAudio, stopPlayback } from "./lib/tts.js";
 import { createLlmClient } from "./lib/llm.js";
 import { STT_SYSTEM_PROMPT, TTS_AUTO_SYSTEM_PROMPT, TTS_MANUAL_SYSTEM_PROMPT } from "./lib/prompts.js";
 import { VoiceCostsPanel } from "./lib/panel.js";
+import { createVoiceChat } from "./lib/voice-chat.js";
 
 async function getTurnAssistantText(client, api) {
   const route = api.route.current;
@@ -79,6 +80,73 @@ export const OpenCodeVoice = {
     function toast(message, variant = "info") {
       api.ui.toast({ message, variant, duration: 3000 });
     }
+
+    // ---- Voice chat mode (push-to-talk loop) ----
+    const voiceChat = createVoiceChat({
+      api,
+      client: api.client,
+      kv,
+      complete,
+      toast,
+      log,
+      options: options || {},
+    });
+
+    // ---- Voice reply mode + voice chat keybindings ----
+    //   Ctrl+Alt+C  : toggle voice reply mode (auto-TTS every assistant turn)
+    //   Ctrl+Alt+/  : start voice-chat recording
+    //   Ctrl+Alt+\  : stop recording, transcribe, submit, and speak reply
+    let offIdle = null;
+    try {
+      const layer = {
+        bindings: [
+          { key: "ctrl+alt+c", cmd: "voice.reply-mode.toggle" },
+          { key: "ctrl+alt+/", cmd: "voice.chat.start" },
+          { key: "ctrl+alt+\\", cmd: "voice.chat.send" },
+        ],
+        commands: [
+          {
+            name: "voice.reply-mode.toggle",
+            run: () => {
+              voiceChat.toggleReplyMode();
+            },
+          },
+          {
+            name: "voice.chat.start",
+            run: () => {
+              if (!soxAvailable()) {
+                toast("sox not found on PATH - install sox first", "error");
+                return;
+              }
+              voiceChat.startChat();
+            },
+          },
+          {
+            name: "voice.chat.send",
+            run: () => {
+              voiceChat.stopAndSend();
+            },
+          },
+        ],
+      };
+      const offLayer = api.keymap.registerLayer(layer);
+      offIdle = () => {
+        if (typeof offLayer === "function") offLayer();
+      };
+    } catch (err) {
+      log("keymap", `keymap registration failed: ${err.message}`, "error");
+    }
+
+    // ---- Voice reply mode: auto-TTS on session idle when enabled. ----
+    let lastSpokenMessageID = null;
+    const offReplyIdle = api.event.on("session.idle", async () => {
+      if (!voiceChat.replyModeEnabled()) return;
+      const result = await getTurnAssistantText(api.client, api);
+      if (!result || !result.text) return;
+      if (result.lastMessageID === lastSpokenMessageID) return;
+      lastSpokenMessageID = result.lastMessageID;
+      await speakText(result.text, TTS_AUTO_SYSTEM_PROMPT);
+    });
 
     // ---- Sidebar panel ----
     api.slots.register({
@@ -131,8 +199,6 @@ export const OpenCodeVoice = {
     }
 
     // ---- TTS pipeline ----
-    let lastSpokenMessageID = null;
-
     async function speakText(text, systemPrompt) {
       if (!text) return;
       toast("Normalizing response...");
@@ -166,16 +232,6 @@ export const OpenCodeVoice = {
       }
       await speakText(result.text, manual ? TTS_MANUAL_SYSTEM_PROMPT : TTS_AUTO_SYSTEM_PROMPT);
     }
-
-    // Auto TTS on session idle.
-    const offIdle = api.event.on("session.idle", async () => {
-      if (kv.get("tts.mode", "off") !== "on") return;
-      const result = await getTurnAssistantText(api.client, api);
-      if (!result || !result.text) return;
-      if (result.lastMessageID === lastSpokenMessageID) return;
-      lastSpokenMessageID = result.lastMessageID;
-      await speakText(result.text, TTS_AUTO_SYSTEM_PROMPT);
-    });
 
     // ---- Commands ----
     api.command.register(() => [
@@ -239,15 +295,14 @@ export const OpenCodeVoice = {
         },
       },
       {
-        title: "Voice: toggle auto TTS",
-        value: "voice.mode",
-        description: "Toggle auto text-to-speech on/off",
+        title: "Voice: toggle reply mode",
+        value: "voice.reply-mode",
+        description: "Toggle voice reply mode (auto-TTS every assistant turn)",
         keybind: "<leader>v",
         slash: { name: "voice-mode" },
         onSelect() {
-          const next = kv.get("tts.mode", "off") === "on" ? "off" : "on";
-          kv.set("tts.mode", next);
-          toast(next === "on" ? "Auto TTS on" : "Auto TTS off");
+          const next = voiceChat.toggleReplyMode();
+          toast(next === "on" ? "Voice reply mode ON" : "Voice reply mode OFF");
         },
       },
       {
@@ -267,6 +322,7 @@ export const OpenCodeVoice = {
       stopPlayback();
       cancelRecording();
       if (typeof offIdle === "function") offIdle();
+      if (typeof offReplyIdle === "function") offReplyIdle();
     });
   },
 };
