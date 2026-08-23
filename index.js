@@ -23,6 +23,7 @@ import {
   isRecording,
   cancelRecording,
   transcribeGroq,
+  soxAvailable,
 } from "./lib/stt.js";
 import { synthesizeXai, playAudio, stopPlayback } from "./lib/tts.js";
 import { createLlmClient } from "./lib/llm.js";
@@ -50,7 +51,9 @@ async function getTurnAssistantText(client, api) {
       const textParts = (full.data?.parts || []).filter((p) => p.type === "text");
       const text = textParts.map((p) => p.text || "").join("\n\n").trim();
       if (text) allText.push(text);
-    } catch {}
+    } catch (err) {
+      console.error("[opencode-voice] failed to read message", msgID, err?.message);
+    }
   }
   if (allText.length === 0) return null;
   return { lastMessageID: assistantIDs[assistantIDs.length - 1], text: allText.join("\n\n") };
@@ -60,7 +63,18 @@ export const OpenCodeVoice = {
   id: "opencode-voice",
   tui: async (api, options) => {
     const { kv } = api;
-    const complete = createLlmClient(options || {});
+
+    async function log(scope, message, level = "debug") {
+      try {
+        await api.client.app.log({
+          body: { service: "opencode-voice", level, message, extra: { scope } },
+        });
+      } catch {
+        // Logging must never break the voice flow.
+      }
+    }
+
+    const complete = createLlmClient(options || {}, { log });
 
     function toast(message, variant = "info") {
       api.ui.toast({ message, variant, duration: 3000 });
@@ -79,7 +93,14 @@ export const OpenCodeVoice = {
     });
 
     // ---- STT pipeline ----
+    let sttBusy = false;
+
     async function doTranscribe(submit = false) {
+      if (sttBusy) {
+        toast("STT busy, please wait...");
+        return;
+      }
+      sttBusy = true;
       try {
         const file = await stopRecording();
         toast("Transcribing...");
@@ -102,7 +123,10 @@ export const OpenCodeVoice = {
         toast(`STT ${cost ? `$${cost.toFixed(4)} ` : ""}transcribed`, "success");
         if (submit) await api.client.tui.submitPrompt();
       } catch (err) {
+        log("STT", `transcribe failed: ${err.message}`, "error");
         toast(`STT error: ${err.message}`, "error");
+      } finally {
+        sttBusy = false;
       }
     }
 
@@ -114,6 +138,7 @@ export const OpenCodeVoice = {
       toast("Normalizing response...");
       const llm = await complete({ system: systemPrompt, prompt: `Convert for text-to-speech:\n\n${text}` });
       if (!llm.text) {
+        log("TTS", `normalization failed: ${llm.error || "no text"}`, "warn");
         toast(`TTS normalization failed: ${llm.error || "no text"}`, "warning");
         return;
       }
@@ -128,6 +153,7 @@ export const OpenCodeVoice = {
         toast(`TTS ${cost ? `$${cost.toFixed(4)} ` : ""}playing`);
         await playAudio(file);
       } catch (err) {
+        log("TTS", `synthesis failed: ${err.message}`, "error");
         toast(`TTS error: ${err.message}`, "error");
       }
     }
@@ -142,7 +168,7 @@ export const OpenCodeVoice = {
     }
 
     // Auto TTS on session idle.
-    api.event.on("session.idle", async () => {
+    const offIdle = api.event.on("session.idle", async () => {
       if (kv.get("tts.mode", "off") !== "on") return;
       const result = await getTurnAssistantText(api.client, api);
       if (!result || !result.text) return;
@@ -160,6 +186,10 @@ export const OpenCodeVoice = {
         keybind: "ctrl+r",
         slash: { name: "voice-record" },
         onSelect() {
+          if (!soxAvailable()) {
+            toast("sox not found on PATH - install sox first", "error");
+            return;
+          }
           if (isRecording()) {
             toast("Stopping, transcribing...");
             doTranscribe(false);
@@ -176,6 +206,10 @@ export const OpenCodeVoice = {
         keybind: "<leader>r",
         slash: { name: "voice-submit" },
         onSelect() {
+          if (!soxAvailable()) {
+            toast("sox not found on PATH - install sox first", "error");
+            return;
+          }
           if (!isRecording()) {
             toast("No recording in progress", "warning");
             return;
@@ -232,6 +266,7 @@ export const OpenCodeVoice = {
     api.lifecycle?.onDispose?.(() => {
       stopPlayback();
       cancelRecording();
+      if (typeof offIdle === "function") offIdle();
     });
   },
 };

@@ -62,6 +62,17 @@ Restart OpenCode. The plugin loads at startup.
 | `/voice-mode` | `leader+v` | Toggle auto TTS on/off |
 | `/voice-stop-tts` | `escape` | Stop playback |
 
+> **Note on keybinds.** `ctrl+r` (session rename) and `escape` are OpenCode
+> defaults that this plugin reassigns. If another plugin or your config uses
+> them, adjust `tui.json` `keybinds` accordingly. The commands themselves
+> always work via slash commands; keybinds are conveniences.
+
+> **Note on plugin API.** The plugin uses the legacy `api.command.register`
+> TUI API (kept for v1 compatibility). On future OpenCode versions it may be
+> migrated to `api.keymap.registerLayer`. The sidebar panel uses
+> `api.slots.register` with the `sidebar_content` slot, which is the
+> supported extension point.
+
 ## Cost ledger
 
 Every call appends a JSON line to `~/.local/share/opencode-voice/ledger.jsonl`:
@@ -106,6 +117,10 @@ bun install
 node --test test/   # unit tests
 bun -e "import('./index.js').then(m => console.log(m.default.id))"  # load check
 ```
+
+The sidebar panel uses `createElement` + `spread` (the same primitives as the
+`@opentui/solid` JSX runtime) so it renders without a JSX build step. It
+requires a renderer context, which the slot registry provides at render time.
 
 ## Layout
 

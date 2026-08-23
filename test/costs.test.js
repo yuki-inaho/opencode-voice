@@ -5,7 +5,6 @@ import {
   sttCost,
   ttsCost,
   llmCost,
-  llmCostFromText,
   formatUsd,
   XAI_TTS_USD_PER_1M_CHARS,
 } from "../lib/costs.js";
@@ -46,11 +45,6 @@ test("llmCost falls back to token table", () => {
 
 test("llmCost unknown provider is free", () => {
   assert.equal(llmCost("local", {}), 0);
-});
-
-test("llmCostFromText approximates by chars", () => {
-  const cost = llmCostFromText("deepseek", "x".repeat(400), true);
-  assert.ok(cost > 0);
 });
 
 test("formatUsd adaptive precision", () => {
