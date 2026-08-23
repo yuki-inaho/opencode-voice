@@ -154,7 +154,7 @@ export const OpenCodeVoice = {
         sidebar_content(ctx, props) {
           void ctx;
           void props;
-          return VoiceCostsPanel();
+          return VoiceCostsPanel({ kv });
         },
       },
     });
