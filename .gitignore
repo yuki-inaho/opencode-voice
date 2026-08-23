@@ -1,0 +1,11 @@
+.venv/
+.pixi/
+node_modules/
+__pycache__/
+*.pyc
+config.yaml
+.env
+*.mp3
+*.wav
+*.tmp
+ledger.jsonl

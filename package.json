@@ -1,0 +1,26 @@
+{
+  "name": "opencode-voice",
+  "version": "0.2.0",
+  "description": "Voice conversation plugin for OpenCode TUI with STT (Groq), TTS (xAI), cost ledger, and sidebar panel",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.14.39",
+    "@opentui/solid": "^0.5.6",
+    "solid-js": "^1.9.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.14.39"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "license": "MIT"
+}
