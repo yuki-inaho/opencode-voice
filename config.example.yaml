@@ -1,0 +1,43 @@
+# opencode-voice configuration
+# Copy to config.yaml and edit. Environment variables override these values.
+
+# --- Speech-to-text (音声→テキスト) ---
+# providers: groq | openai | local
+stt:
+  provider: groq
+  model: whisper-large-v3-turbo
+  # api_key: set via VOICE_STT_API_KEY or STT_API_KEY env var
+
+# --- Conversation engine (会話エンジン) ---
+# providers: openrouter | xai | groq | openai | deepseek | local
+# xai (Grok), openrouter (DeepSeek等が安価), local (Ollama等)
+llm:
+  provider: openrouter
+  model: deepseek/deepseek-v4-flash
+  # api_key: set via VOICE_LLM_API_KEY or OPENROUTER_API_KEY / XAI_API_KEY / etc.
+
+# --- Text-to-speech (テキスト→音声) ---
+# providers: xai | openai | elevenlabs | edge | kokoro | local
+# xai: Grok TTS (日本語対応, XAI_API_KEY)
+# edge: 無料 (edge-tts CLI 必要)
+# kokoro: ローカル (kokoro server 必要)
+tts:
+  provider: xai
+  voice: eve
+  language: ja
+  # api_key: set via VOICE_TTS_API_KEY or XAI_API_KEY / etc.
+
+# --- Conversation behavior ---
+system_prompt: >
+  You are a friendly voice conversation assistant. Keep replies short and
+  natural, suitable for spoken dialogue. Do not use markdown.
+history_limit: 20
+max_tokens: 512
+
+# --- Audio ---
+audio:
+  sample_rate: 16000
+  channels: 1
+  silence_timeout_s: 1.2
+  max_record_s: 30.0
+  vad_threshold: 0.02
