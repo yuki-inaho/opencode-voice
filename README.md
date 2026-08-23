@@ -22,6 +22,20 @@ Python/pixi version).
 
 ## Install
 
+### Plugin directory (recommended)
+
+Place the bundled plugin in the global plugin directory so it is auto-loaded
+at startup and is not affected by project `tui.json` overrides:
+
+```bash
+bun run install:plugin   # builds dist/opencode-voice.js and copies to ~/.config/opencode/plugins/
+```
+
+The plugin loads automatically. **Restart OpenCode** for changes to take
+effect (config is read at startup).
+
+### tui.json (alternative)
+
 Add the plugin to `~/.config/opencode/tui.json`:
 
 ```json
@@ -41,7 +55,8 @@ Add the plugin to `~/.config/opencode/tui.json`:
 }
 ```
 
-Restart OpenCode. The plugin loads at startup.
+> Note: if a project `.opencode/tui.json` also defines a `plugin` array, it may
+> override the global one. The plugin-directory method avoids this entirely.
 
 ### Prerequisites
 

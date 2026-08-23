@@ -9,7 +9,9 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "build": "bun build index.js --target=bun --outfile=dist/opencode-voice.js --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js --external @opentui/keymap",
+    "install:plugin": "bun run build && mkdir -p ~/.config/opencode/plugins && cp dist/opencode-voice.js ~/.config/opencode/plugins/opencode-voice.js"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.14.39",

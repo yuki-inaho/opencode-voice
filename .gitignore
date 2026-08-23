@@ -9,3 +9,4 @@ config.yaml
 *.wav
 *.tmp
 ledger.jsonl
+dist/
